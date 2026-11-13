@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Government School Management Portal</title>
+<style>
+:root{--navy:#14284b;--navy2:#1d3a6b;--blue:#2f80ed;--light:#e8f1fd;--bg:#f2f4f8;--card:#fff;--text:#1c2533;--mute:#6b778c;--line:#e1e6ee;--ok:#1e9e5a;--bad:#d64545;--warn:#d98e04}
+body.dark{--bg:#0f1624;--card:#18223a;--text:#e6ebf5;--mute:#93a0b8;--line:#2a3654;--light:#1f2e50}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 "Segoe UI",Roboto,system-ui,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}
+.app{display:flex;min-height:100vh}
+.side{width:240px;background:var(--navy);color:#cfd9ee;transition:width .2s;flex-shrink:0;display:flex;flex-direction:column}
+.side.c{width:64px}.side.c .lbl,.side.c .brand span{display:none}
+.brand{padding:16px;font-weight:700;color:#fff;display:flex;gap:10px;align-items:center;font-size:14px}
+.brand b{background:var(--blue);border-radius:8px;width:32px;height:32px;display:grid;place-items:center;flex-shrink:0}
+.nav{padding:6px 8px;flex:1}
+.nav button{display:flex;gap:12px;align-items:center;width:100%;background:none;border:0;color:inherit;padding:10px 12px;border-radius:8px;cursor:pointer;text-align:left}
+.nav button:hover{background:var(--navy2)}.nav button.on{background:var(--blue);color:#fff}
+.main{flex:1;min-width:0}
+.top{display:flex;align-items:center;gap:10px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top h1{font-size:18px;margin:0;flex:1}
+.wrap{padding:20px;max-width:1200px}
+.card{background:var(--card);border-radius:12px;box-shadow:0 1px 4px rgba(20,40,75,.08);padding:16px;margin-bottom:16px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.stat{font-size:28px;font-weight:700;color:var(--blue)}.mute{color:var(--mute);font-size:13px}
+.btn{background:var(--blue);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+.btn.g{background:var(--light);color:var(--blue)}.btn.d{background:var(--bad)}.btn.s{padding:4px 9px;font-size:13px}
+input,select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);max-width:100%}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{color:var(--mute);font-weight:600;font-size:13px}
+.tag{padding:2px 8px;border-radius:20px;font-size:12px;background:var(--light);color:var(--blue)}.tag.f{background:#fde8e8;color:var(--bad)}.tag.p{background:#e2f6ec;color:var(--ok)}
+.hb{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px}.hb i{display:block;height:14px;background:var(--blue);border-radius:4px;min-width:2px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:20;padding:12px}
+.md{background:var(--card);border-radius:14px;padding:20px;width:440px;max-width:100%;max-height:90vh;overflow:auto}
+.md label{display:block;margin:8px 0 2px;font-size:13px;color:var(--mute)}.md input,.md select{width:100%}
+.login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,var(--navy),var(--navy2));padding:16px}
+.login .card{width:380px;max-width:100%}.login input,.login select{width:100%;margin:4px 0 10px}
+.empty{text-align:center;color:var(--mute);padding:28px}
+.note{background:#fff7e0;color:#6a4b00;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:12px}
+#toast{position:fixed;bottom:18px;right:18px;background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;z-index:30;display:none}
+@media(max-width:700px){.side{position:fixed;z-index:10;height:100%}.side.c{width:0;overflow:hidden}.main{margin-left:0}.wrap{padding:12px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div><div id="toast"></div>
+<script>
+const KEY='gsmp_v1',CL=['6','7','8','9','10','11','12'],SEC=['A','B'],SUBJ=['Hindi','English','Mathematics','Science','Social Science'];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+const USERS={admin:{pw:'demo123',role:'admin',name:'Demo Head of School'},teacher:{pw:'demo123',role:'teacher',name:'Demo Teacher'},student:{pw:'demo123',role:'student',name:'Demo Student',sid:'S001'},parent:{pw:'demo123',role:'parent',name:'Demo Parent',sid:'S001'}};
+const MENU={admin:['dashboard','students','teachers','staff','attendance','exams','notices','library','resources','settings'],teacher:['dashboard','students','attendance','exams','notices','resources'],student:['dashboard','myresult','notices','resources'],parent:['dashboard','myresult','notices','resources']};
+const TITLE={dashboard:'Dashboard',students:'Student Management',teachers:'Teacher Management',staff:'Staff Management',attendance:'Attendance',exams:'Examinations & Report Cards',notices:'Notices & Circulars',library:'Digital Library',resources:'Learning Resources',settings:'Settings',myresult:'Results & Attendance'};
+const ICON={dashboard:'▦',students:'☺',teachers:'✎',staff:'⚒',attendance:'✔',exams:'✐',notices:'✉',library:'▤',resources:'☷',settings:'⚙',myresult:'★'};
+
+function seed(){
+  const fn=['Aarav','Diya','Rohan','Priya','Kabir','Ananya','Vihaan','Isha','Arjun','Meera'],ln=['Sharma','Verma','Gupta','Singh','Yadav'];
+  const students=[],marks={},att={};
+  for(let i=0;i<50;i++){const id='S'+String(i+1).padStart(3,'0');
+    students.push({id,adm:'ADM'+(1001+i),name:fn[i%10]+' '+ln[(i*3)%5],cls:CL[i%7],sec:SEC[i%2],roll:Math.floor(i/7)+1,gender:i%2?'Female':'Male',guardian:'Demo Guardian',phone:'0000000000',status:'Active'});
+    marks[id]={};SUBJ.forEach((s,j)=>marks[id][s]=(i*7+j*13)%55+40);
+    att[id]=i%9===0?'Absent':'Present';}
+  const tn=['Meena Rao','Suresh Nair','Kavita Joshi','Anil Mehta','Pooja Iyer','Rakesh Das','Sunita Pillai','Vikram Bose','Neha Kapoor','Manoj Tiwari'];
+  const teachers=tn.map((n,i)=>({id:'T'+(101+i),name:n,subject:SUBJ[i%5],designation:i<5?'TGT':'PGT',phone:'0000000000'}));
+  const staff=['Ramesh (Clerk)','Geeta (Lab Assistant)','Sohan (Peon)','Lata (Librarian)','Dinesh (Guard)'].map((n,i)=>({id:'E'+(201+i),name:n,role:n.match(/\((.*)\)/)[1],phone:'0000000000'}));
+  return{school:{name:'Demo Government School',address:'Delhi (fictional demo address)',session:'2026-27'},students,teachers,staff,marks,attendance:{[today()]:att},
+    notices:[{id:1,title:'Welcome to the new session (demo)',cat:'General',date:today(),body:'This is a fictional demo notice.'},{id:2,title:'Half-Yearly exam schedule (demo)',cat:'Examination',date:today(),body:'Fictional sample notice.'}],
+    books:[{id:1,title:'Demo Science Reader',author:'A. Author',isbn:'000-1',qty:5,issued:[]},{id:2,title:'Demo Hindi Kavya',author:'B. Writer',isbn:'000-2',qty:3,issued:[]}]};
+}
+let DB=JSON.parse(localStorage.getItem(KEY)||'null')||seed();
+const save=()=>localStorage.setItem(KEY,JSON.stringify(DB));
+let S={user:null,view:'dashboard',collapsed:false,q:'',cls:'',ec:'6',es:'A',ac:'6',as:'A',ad:today(),rc:'',rs:''};
+if(localStorage.getItem('gsmp_dark')==='1')document.body.classList.add('dark');
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200)}
+const can=(...r)=>r.includes(S.user.role);
+function grade(p){return p>=90?'A+':p>=80?'A':p>=70?'B':p>=60?'C':p>=33?'D':'F'}
+function calc(id){const m=DB.marks[id]||{};const vals=SUBJ.map(s=>+m[s]||0),tot=vals.reduce((a,b)=>a+b,0),pct=tot/(SUBJ.length*100)*100;
+  return{tot,pct:pct.toFixed(1),g:grade(pct),pass:vals.every(v=>v>=33)}}
+function attPct(id){const d=Object.values(DB.attendance);let p=0,n=0;d.forEach(x=>{if(x[id]){n++;if(x[id]==='Present'||x[id]==='Late')p++}});return n?Math.round(p/n*100):0}
+
+function form(title,fields,onSave,vals={}){
+  const o=document.createElement('div');o.className='ov';
+  o.innerHTML=`<div class="md"><h3 style="margin-top:0">${esc(title)}</h3>${fields.map(f=>`<label>${f.l}</label>${f.o?`<select name="${f.k}">${f.o.map(x=>`<option ${vals[f.k]==x?'selected':''}>${x}</option>`).join('')}</select>`:`<input name="${f.k}" type="${f.t||'text'}" value="${esc(vals[f.k]??'')}">`}`).join('')}<p class="mute err" style="color:var(--bad)"></p><div class="bar"><button class="btn" id="sv">Save</button><button class="btn g" id="cn">Cancel</button></div></div>`;
+  document.body.appendChild(o);o.querySelector('#cn').onclick=()=>o.remove();
+  o.querySelector('#sv').onclick=()=>{const v={};o.querySelectorAll('[name]').forEach(e=>v[e.name]=e.value.trim());
+    const miss=fields.find(f=>f.r&&!v[f.k]);if(miss){o.querySelector('.err').textContent=miss.l+' is required.';return}
+    onSave(v);o.remove();save();render();toast('Saved')};
+}
+function csv(name,rows){const t=rows.map(r=>r.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download=name;a.click()}
+
+function login(){
+  $('#app').innerHTML=`<div class="login"><div class="card"><h2 style="margin-top:0">Government School Management Portal</h2><p class="mute">Independent school management platform. Not an official Government of Delhi website.</p>
+  <label class="mute">Username</label><input id="u" placeholder="admin / teacher / student / parent"><label class="mute">Password</label><input id="p" type="password" placeholder="demo123">
+  <p id="le" style="color:var(--bad);margin:0 0 8px"></p><button class="btn" style="width:100%" id="go">Sign in</button><p class="mute">Demo accounts (fictional data): admin, teacher, student, parent — password demo123</p></div></div>`;
+  const go=()=>{const u=USERS[$('#u').value.trim().toLowerCase()];if(!u||u.pw!==$('#p').value){$('#le').textContent='Wrong username or password.';return}S.user=u;S.view='dashboard';render()};
+  $('#go').onclick=go;$('#p').onkeydown=e=>e.key==='Enter'&&go();
+}
+
+function render(){
+  if(!S.user)return login();
+  const m=MENU[S.user.role];
+  $('#app').innerHTML=`<div class="app"><aside class="side ${S.collapsed?'c':''}"><div class="brand"><b>S</b><span>${esc(DB.school.name)}</span></div><nav class="nav">${m.map(k=>`<button class="${S.view===k?'on':''}" data-v="${k}"><span>${ICON[k]}</span><span class="lbl">${TITLE[k]}</span></button>`).join('')}</nav></aside>
+  <div class="main"><div class="top"><button class="btn g s" id="tg">☰</button><h1>${TITLE[S.view]}</h1><span class="mute">${esc(S.user.name)} · ${S.user.role}</span><button class="btn g s" id="dk">Dark mode</button><button class="btn g s" id="lo">Sign out</button></div><div class="wrap" id="v"></div></div></div>`;
+  document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{S.view=b.dataset.v;S.q='';render()});
+  $('#tg').onclick=()=>{S.collapsed=!S.collapsed;render()};
+  $('#dk').onclick=()=>{document.body.classList.toggle('dark');localStorage.setItem('gsmp_dark',document.body.classList.contains('dark')?'1':'0')};
+  $('#lo').onclick=()=>{S.user=null;render()};
+  V[S.view]($('#v'));
+}
+const opts=(a,v)=>a.map(x=>`<option ${x==v?'selected':''}>${x}</option>`).join('');
+const V={};
+
+V.dashboard=el=>{
+  const st=DB.students.filter(s=>s.status==='Active'),t=DB.attendance[today()]||{};
+  const pres=Object.values(t).filter(x=>x==='Present'||x==='Late').length,tot=Object.keys(t).length;
+  const cs=CL.map(c=>[c,st.filter(s=>s.cls===c).length]),mx=Math.max(1,...cs.map(x=>x[1]));
+  const sp=SUBJ.map(s=>[s,Math.round(st.reduce((a,x)=>a+(+(DB.marks[x.id]||{})[s]||0),0)/Math.max(1,st.length))]);
+  const ml=st.filter(s=>s.gender==='Male').length;
+  el.innerHTML=`<div class="note">Demo mode: all records are fictional and stored only in this browser.</div>
+  <div class="grid"><div class="card"><div class="mute">Students</div><div class="stat">${st.length}</div></div><div class="card"><div class="mute">Teachers</div><div class="stat">${DB.teachers.length}</div></div><div class="card"><div class="mute">Non-teaching staff</div><div class="stat">${DB.staff.length}</div></div><div class="card"><div class="mute">Present today</div><div class="stat">${tot?Math.round(pres/tot*100)+'%':'—'}</div></div></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"><div class="card"><b>Class-wise strength</b>${cs.map(([c,n])=>`<div class="hb"><span style="width:60px">Class ${c}</span><i style="width:${n/mx*60}%"></i>${n}</div>`).join('')}</div>
+  <div class="card"><b>Average marks by subject</b>${sp.map(([c,n])=>`<div class="hb"><span style="width:110px">${c}</span><i style="width:${n*.6}%"></i>${n}</div>`).join('')}<p class="mute">Gender: ${ml} male, ${st.length-ml} female</p></div></div>
+  <div class="card"><b>Recent notices</b>${DB.notices.length?DB.notices.slice(-4).reverse().map(n=>`<p><span class="tag">${esc(n.cat)}</span> <b>${esc(n.title)}</b><br><span class="mute">${n.date}</span></p>`).join(''):'<div class="empty">No notices yet.</div>'}</div>`;
+};
+
+V.students=el=>{
+  const adm=can('admin');
+  let L=DB.students.filter(s=>(!S.cls||s.cls===S.cls)&&(!S.q||(s.name+s.adm+s.roll).toLowerCase().includes(S.q.toLowerCase())));
+  el.innerHTML=`<div class="bar"><input id="q" placeholder="Search name, admission no, roll" value="${esc(S.q)}"><select id="fc"><option value="">All classes</option>${opts(CL,S.cls)}</select>${adm?'<button class="btn" id="ad">Add student</button><button class="btn g" id="im">Import CSV</button><input type="file" id="fi" accept=".csv" hidden>':''}<button class="btn g" id="ex">Export CSV</button></div>
+  <div class="card tw">${L.length?`<table><tr><th>Adm. no</th><th>Name</th><th>Class</th><th>Roll</th><th>Gender</th><th>Guardian</th><th>Status</th><th>Attendance</th><th></th></tr>${L.map(s=>`<tr><td>${s.adm}</td><td>${esc(s.name)}</td><td>${s.cls}-${s.sec}</td><td>${s.roll}</td><td>${s.gender}</td><td>${esc(s.guardian)}</td><td><span class="tag ${s.status==='Active'?'p':'f'}">${s.status}</span></td><td>${attPct(s.id)}%</td><td>${adm?`<button class="btn g s" data-e="${s.id}">Edit</button> <button class="btn d s" data-d="${s.id}">Delete</button>`:''}</td></tr>`).join('')}</table>`:'<div class="empty">No students match. Try a different search.</div>'}</div>`;
+  $('#q').oninput=e=>{S.q=e.target.value;V.students(el);const i=$('#q');i.focus();i.setSelectionRange(99,99)};
+  $('#fc').onchange=e=>{S.cls=e.target.value;V.students(el)};
+  $('#ex').onclick=()=>csv('students.csv',[['AdmNo','Name','Class','Section','Roll','Gender','Guardian','Status'],...L.map(s=>[s.adm,s.name,s.cls,s.sec,s.roll,s.gender,s.guardian,s.status])]);
+  const F=[{k:'name',l:'Full name',r:1},{k:'adm',l:'Admission number',r:1},{k:'cls',l:'Class',o:CL},{k:'sec',l:'Section',o:SEC},{k:'roll',l:'Roll number',t:'number',r:1},{k:'gender',l:'Gender',o:['Male','Female','Other']},{k:'guardian',l:'Guardian name'},{k:'phone',l:'Parent phone'},{k:'status',l:'Status',o:['Active','Transferred','Inactive']}];
+  if(adm){
+    $('#ad').onclick=()=>form('Add student',F,v=>{if(DB.students.some(s=>s.adm===v.adm))return toast('Admission number already exists');DB.students.push({...v,id:'S'+Date.now()});});
+    el.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{const s=DB.students.find(x=>x.id===b.dataset.e);form('Edit student',F,v=>Object.assign(s,v),s)});
+    el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{if(confirm('Delete this student record permanently?')){DB.students=DB.students.filter(x=>x.id!==b.dataset.d);save();render()}});
+    $('#im').onclick=()=>$('#fi').click();
+    $('#fi').onchange=e=>{const r=new FileReader();r.onload=()=>{let n=0;r.result.split(/\r?\n/).slice(1).forEach(l=>{const c=l.split(',').map(x=>x.replace(/"/g,'').trim());if(c[0]&&c[1]&&!DB.students.some(s=>s.adm===c[1])){DB.students.push({id:'S'+Date.now()+n,name:c[0],adm:c[1],cls:c[2]||'6',sec:c[3]||'A',roll:c[4]||'',gender:c[5]||'Male',guardian:'',phone:'',status:'Active'});n++}});save();render();toast(n+' students imported')};r.readAsText(e.target.files[0])};
+  }
+};
+
+function simpleList(el,key,fields,cols,title){
+  el.innerHTML=`<div class="bar"><button class="btn" id="ad">Add ${title}</button><button class="btn g" id="ex">Export CSV</button></div><div class="card tw">${DB[key].length?`<table><tr>${cols.map(c=>`<th>${c[1]}</th>`).join('')}<th></th></tr>${DB[key].map(r=>`<tr>${cols.map(c=>`<td>${esc(r[c[0]])}</td>`).join('')}<td><button class="btn d s" data-d="${r.id}">Delete</button></td></tr>`).join('')}</table>`:'<div class="empty">Nothing here yet.</div>'}</div>`;
+  $('#ad').onclick=()=>form('Add '+title,fields,v=>DB[key].push({...v,id:'X'+Date.now()}));
+  $('#ex').onclick=()=>csv(key+'.csv',[cols.map(c=>c[1]),...DB[key].map(r=>cols.map(c=>r[c[0]]))]);
+  el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{if(confirm('Delete this record?')){DB[key]=DB[key].filter(x=>x.id!==b.dataset.d);save();render()}});
+}
+V.teachers=el=>simpleList(el,'teachers',[{k:'name',l:'Name',r:1},{k:'subject',l:'Subject',o:SUBJ},{k:'designation',l:'Designation',o:['TGT','PGT','Principal','Vice Principal']},{k:'phone',l:'Phone'}],[['id','Employee ID'],['name','Name'],['subject','Subject'],['designation','Designation'],['phone','Phone']],'teacher');
+V.staff=el=>simpleList(el,'staff',[{k:'name',l:'Name',r:1},{k:'role',l:'Role',r:1},{k:'phone',l:'Phone'}],[['id','Staff ID'],['name','Name'],['role','Role'],['phone','Phone']],'staff member');
+
+V.attendance=el=>{
+  const L=DB.students.filter(s=>s.cls===S.ac&&s.sec===S.as&&s.status==='Active'),rec=(DB.attendance[S.ad]=DB.attendance[S.ad]||{});
+  el.innerHTML=`<div class="bar"><select id="c">${opts(CL,S.ac)}</select><select id="s">${opts(SEC,S.as)}</select><input type="date" id="d" value="${S.ad}"><button class="btn" id="sv">Save attendance</button></div>
+  <div class="card tw">${L.length?`<table><tr><th>Roll</th><th>Name</th><th>Status</th><th>Overall %</th></tr>${L.map(s=>`<tr><td>${s.roll}</td><td>${esc(s.name)}</td><td><select data-s="${s.id}">${opts(['Present','Absent','Late','Leave'],rec[s.id]||'Present')}</select></td><td>${attPct(s.id)}% ${attPct(s.id)<75?'<span class="tag f">Low</span>':''}</td></tr>`).join('')}</table>`:'<div class="empty">No students in this class and section.</div>'}</div>`;
+  ['c','s','d'].forEach(i=>$('#'+i).onchange=e=>{if(i==='c')S.ac=e.target.value;if(i==='s')S.as=e.target.value;if(i==='d')S.ad=e.target.value;V.attendance(el)});
+  $('#sv').onclick=()=>{el.querySelectorAll('[data-s]').forEach(x=>rec[x.dataset.s]=x.value);save();toast('Attendance saved');V.attendance(el)};
+};
+
+V.exams=el=>{
+  const L=DB.students.filter(s=>s.cls===S.ec&&s.sec===S.es&&s.status==='Active'),ed=can('admin','teacher');
+  el.innerHTML=`<div class="bar"><select id="c">${opts(CL,S.ec)}</select><select id="s">${opts(SEC,S.es)}</select>${ed?'<button class="btn" id="sv">Save marks</button>':''}<button class="btn g" id="ex">Export results</button></div>
+  <p class="mute">Half-Yearly Examination · each subject out of 100 · pass mark 33 · totals, percentage and grade are calculated automatically.</p>
+  <div class="card tw">${L.length?`<table><tr><th>Roll</th><th>Name</th>${SUBJ.map(s=>`<th>${s}</th>`).join('')}<th>Total</th><th>%</th><th>Grade</th><th>Result</th><th></th></tr>${L.map(s=>{const r=calc(s.id);return`<tr><td>${s.roll}</td><td>${esc(s.name)}</td>${SUBJ.map(j=>`<td><input type="number" min="0" max="100" style="width:64px" data-m="${s.id}|${j}" value="${(DB.marks[s.id]||{})[j]??''}" ${ed?'':'disabled'}></td>`).join('')}<td>${r.tot}</td><td>${r.pct}</td><td>${r.g}</td><td><span class="tag ${r.pass?'p':'f'}">${r.pass?'Pass':'Fail'}</span></td><td><button class="btn g s" data-r="${s.id}">Report card</button></td></tr>`}).join('')}</table>`:'<div class="empty">No students in this class and section.</div>'}</div>`;
+  $('#c').onchange=e=>{S.ec=e.target.value;V.exams(el)};$('#s').onchange=e=>{S.es=e.target.value;V.exams(el)};
+  $('#ex').onclick=()=>csv('results.csv',[['Roll','Name',...SUBJ,'Total','Percent','Grade','Result'],...L.map(s=>{const r=calc(s.id);return[s.roll,s.name,...SUBJ.map(j=>(DB.marks[s.id]||{})[j]),r.tot,r.pct,r.g,r.pass?'Pass':'Fail']})]);
+  if(ed)$('#sv').onclick=()=>{let bad=0;el.querySelectorAll('[data-m]').forEach(i=>{const[id,j]=i.dataset.m.split('|'),v=+i.value;if(i.value===''||v<0||v>100){bad++;return}(DB.marks[id]=DB.marks[id]||{})[j]=v});if(bad)toast(bad+' marks were empty or outside 0–100 and were skipped');else toast('Marks saved');save();V.exams(el)};
+  el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>reportCard(b.dataset.r));
+};
+function reportCard(id){
+  const s=DB.students.find(x=>x.id===id),r=calc(id),w=window.open('','_blank');
+  if(!w)return toast('Allow pop-ups to print the report card');
+  w.document.write(`<title>Report card</title><body style="font-family:Segoe UI,sans-serif;max-width:700px;margin:20px auto"><h2 style="text-align:center;margin:0">${esc(DB.school.name)}</h2><p style="text-align:center;margin:2px">${esc(DB.school.address)} · Session ${esc(DB.school.session)}</p><h3 style="text-align:center">Report Card – Half-Yearly Examination</h3><p><b>Name:</b> ${esc(s.name)} &nbsp; <b>Class:</b> ${s.cls}-${s.sec} &nbsp; <b>Roll:</b> ${s.roll} &nbsp; <b>Adm. no:</b> ${s.adm}</p><table border="1" cellpadding="6" style="border-collapse:collapse;width:100%"><tr><th>Subject</th><th>Max</th><th>Obtained</th></tr>${SUBJ.map(j=>`<tr><td>${j}</td><td>100</td><td>${(DB.marks[id]||{})[j]??'-'}</td></tr>`).join('')}<tr><th>Total</th><th>${SUBJ.length*100}</th><th>${r.tot}</th></tr></table><p><b>Percentage:</b> ${r.pct}% &nbsp; <b>Grade:</b> ${r.g} &nbsp; <b>Result:</b> ${r.pass?'Pass':'Fail'} &nbsp; <b>Attendance:</b> ${attPct(id)}%</p><p>Teacher remarks: ______________________</p><p style="margin-top:50px">Class teacher ____________ &nbsp;&nbsp;&nbsp;&nbsp; Head of School ____________</p><p style="font-size:12px;color:#777">Demo document generated by an independent school management platform.</p><script>setTimeout(()=>print(),300)<\/script>`);w.document.close();
+}
+
+V.myresult=el=>{
+  const s=DB.students.find(x=>x.id===S.user.sid);if(!s){el.innerHTML='<div class="empty">No student is linked to this account.</div>';return}
+  const r=calc(s.id);
+  el.innerHTML=`<div class="card"><h3 style="margin-top:0">${esc(s.name)}</h3><p class="mute">Class ${s.cls}-${s.sec} · Roll ${s.roll} · Adm. no ${s.adm}</p><div class="grid"><div><div class="mute">Attendance</div><div class="stat">${attPct(s.id)}%</div></div><div><div class="mute">Percentage</div><div class="stat">${r.pct}%</div></div><div><div class="mute">Grade</div><div class="stat">${r.g}</div></div></div></div>
+  <div class="card"><b>Half-Yearly marks</b>${SUBJ.map(j=>`<div class="hb"><span style="width:120px">${j}</span><i style="width:${((DB.marks[s.id]||{})[j]||0)*.6}%"></i>${(DB.marks[s.id]||{})[j]??'-'}</div>`).join('')}<p><button class="btn" id="rc">Download / print report card</button></p></div>`;
+  $('#rc').onclick=()=>reportCard(s.id);
+};
+
+V.notices=el=>{
+  const adm=can('admin');
+  el.innerHTML=`${adm?'<div class="bar"><button class="btn" id="ad">Publish notice</button></div>':''}${DB.notices.length?[...DB.notices].reverse().map(n=>`<div class="card"><span class="tag">${esc(n.cat)}</span> <span class="mute">${n.date}</span>${adm?` <button class="btn d s" data-d="${n.id}" style="float:right">Delete</button>`:''}<h3 style="margin:6px 0">${esc(n.title)}</h3><div>${esc(n.body)}</div></div>`).join(''):'<div class="card empty">No notices have been published.</div>'}`;
+  if(adm){$('#ad').onclick=()=>form('Publish notice',[{k:'title',l:'Title',r:1},{k:'cat',l:'Category',o:['General','Examination','Holiday','Event','Circular']},{k:'body',l:'Details',r:1}],v=>DB.notices.push({...v,id:Date.now(),date:today()}));
+  el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{DB.notices=DB.notices.filter(x=>x.id!=b.dataset.d);save();render()})}
+};
+
+V.library=el=>{
+  el.innerHTML=`<div class="bar"><input id="q" placeholder="Search title or author" value="${esc(S.q)}"><button class="btn" id="ad">Add book</button></div><div class="card tw"><table><tr><th>Title</th><th>Author</th><th>ISBN</th><th>Total</th><th>Available</th><th>Issued to</th><th></th></tr>${DB.books.filter(b=>!S.q||(b.title+b.author).toLowerCase().includes(S.q.toLowerCase())).map(b=>`<tr><td>${esc(b.title)}</td><td>${esc(b.author)}</td><td>${esc(b.isbn)}</td><td>${b.qty}</td><td>${b.qty-b.issued.length}</td><td>${b.issued.map(i=>esc(i.who)+' (due '+i.due+')').join(', ')||'—'}</td><td><button class="btn g s" data-i="${b.id}">Issue</button> <button class="btn g s" data-r="${b.id}">Return</button></td></tr>`).join('')}</table></div>`;
+  $('#q').oninput=e=>{S.q=e.target.value;V.library(el);const i=$('#q');i.focus();i.setSelectionRange(99,99)};
+  $('#ad').onclick=()=>form('Add book',[{k:'title',l:'Title',r:1},{k:'author',l:'Author'},{k:'isbn',l:'ISBN'},{k:'qty',l:'Copies',t:'number',r:1}],v=>DB.books.push({...v,qty:+v.qty,id:Date.now(),issued:[]}));
+  el.querySelectorAll('[data-i]').forEach(x=>x.onclick=()=>{const b=DB.books.find(k=>k.id==x.dataset.i);if(b.qty-b.issued.length<1)return toast('No copies available');form('Issue book',[{k:'who',l:'Student / teacher name',r:1},{k:'due',l:'Due date',t:'date',r:1}],v=>b.issued.push({who:v.who,date:today(),due:v.due}))});
+  el.querySelectorAll('[data-r]').forEach(x=>x.onclick=()=>{const b=DB.books.find(k=>k.id==x.dataset.r);if(!b.issued.length)return toast('Nothing to return');b.issued.shift();save();render();toast('Book returned')});
+};
+
+const SRC=[['Delhi Education Department','https://www.edudel.nic.in/','Official home page'],['Academic resources','https://www.edudel.nic.in/edu/Academic.html','Textbooks and academic material'],['Class-wise syllabus','https://www.edudel.nic.in/edu/Syllabus.html','Syllabus'],['Examination materials','https://www.edudel.nic.in/edu/examinationmaterial.html','Sample and practice papers'],['ICT books','https://edudel.nic.in/edu/ict.html','Computer / ICT books'],['Official e-content','https://www.edudel.nic.in/mis/smc/other/frmEContent1.aspx','Digital learning content']];
+V.resources=el=>{
+  el.innerHTML=`<div class="note">Links go to the official Delhi Education Department website. This portal does not host books. Open the source and choose your class and subject there.</div>
+  <div class="bar"><select id="c"><option value="">Class (for reference)</option>${opts(CL,S.rc)}</select></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">${SRC.map(r=>`<div class="card"><b>${r[0]}</b><p class="mute">${r[2]}${S.rc?' · Class '+S.rc:''}</p><p class="mute">Source: Delhi Education Department</p><a class="btn" style="text-decoration:none;display:inline-block" href="${r[1]}" target="_blank" rel="noopener noreferrer">Visit official source</a></div>`).join('')}</div>`;
+  $('#c').onchange=e=>{S.rc=e.target.value;V.resources(el)};
+};
+
+V.settings=el=>{
+  const sc=DB.school;
+  el.innerHTML=`<div class="card"><b>School information</b><div class="bar" style="margin-top:10px"><input id="n" value="${esc(sc.name)}" placeholder="School name"><input id="a" value="${esc(sc.address)}" placeholder="Address"><input id="y" value="${esc(sc.session)}" placeholder="Session"><button class="btn" id="sv">Save</button></div></div>
+  <div class="card"><b>Demo data</b><p class="mute">Resetting removes every change you made and restores the fictional demo records.</p><button class="btn d" id="rs">Reset demo data</button></div>
+  <div class="card"><b>Backup</b><p class="mute">Your data lives in this browser only. Download a backup file regularly.</p><button class="btn g" id="bk">Download backup (JSON)</button></div>`;
+  $('#sv').onclick=()=>{if(!$('#n').value.trim())return toast('School name is required');DB.school={name:$('#n').value.trim(),address:$('#a').value.trim(),session:$('#y').value.trim()};save();render();toast('Saved')};
+  $('#rs').onclick=()=>{if(confirm('Reset all data to the demo records?')){DB=seed();save();render();toast('Demo data restored')}};
+  $('#bk').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(DB)],{type:'application/json'}));a.download='school-backup.json';a.click()};
+};
+render();
+</script>
+</body>
+</html>
